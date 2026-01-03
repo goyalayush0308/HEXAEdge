@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>फैक्ट्री डैशबोर्ड</title>
+
+<style>
+/* ===== EXISTING CSS (UNCHANGED) ===== */
+:root{
+  --bg:#020617;
+  --tile:#0b1224;
+  --border:#1e293b;
+  --green:#22c55e;
+  --red:#ef4444;
+  --yellow:#facc15;
+  --blue:#38bdf8;
+  --text:#ffffff;
+  --muted:#94a3b8;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;height:100%;overflow:hidden;
+  background:var(--bg);color:var(--text);
+  font-family:"Segoe UI",system-ui,sans-serif;
+}
+.page{
+  min-height:calc(100vh - 120px);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  padding-top:12px;gap:18px;
+}
+header{text-align:center}
+header h1{margin:0;font-size:28px;font-weight:700}
+.info-icon{
+  float:right;font-size:18px;margin-left:10px;
+  cursor:pointer;color:#38bdf8;
+}
+.header-actions{
+  position:absolute;
+  right:0;
+  top:4px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.lang-select{
+  background:#0b1224;
+  color:#ffffff;
+  border:1px solid #1e293b;
+  border-radius:6px;
+  padding:3px 6px;
+  font-size:13px;
+}
+header small{
+  display:block;margin-top:6px;
+  font-size:15px;color:var(--muted);
+}
+.header-table{width:100%;margin:5px 0 0;border-collapse:collapse}
+.header-table td{border:none;padding:0;vertical-align:middle}
+.header-table img{transform:translateX(-10px)}
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(3,320px);
+  grid-auto-rows:240px;
+  gap:22px;justify-content:center;
+}
+.tile{
+  background:var(--tile);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 10px 28px rgba(0,0,0,.65);
+  padding:16px 18px;
+  display:flex;flex-direction:column;
+}
+.span-2{grid-row:span 2}
+.tile-header{display:flex;justify-content:space-between;margin-bottom:10px}
+.tile-title{
+  display:flex;align-items:center;gap:12px;
+  font-size:18px;font-weight:700;color:var(--blue)
+}
+.tile-icon{font-size:38px}
+.tile-body{flex:1;font-size:16px}
+.energy-body{display:flex;flex-direction:column;height:100%}
+.energy-main{flex:1;display:flex;align-items:center;justify-content:center}
+.energy-details{margin-top:auto}
+table{width:100%;border-collapse:collapse}
+td{padding:7px 4px;border-bottom:1px dashed #1e293b}
+td:last-child{text-align:right;font-weight:700}
+.big{font-size:40px;font-weight:800;text-align:center}
+.capacity-box{margin-top:12px}
+.capacity-label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+.capacity-bar{height:14px;background:#1e293b;border-radius:8px;overflow:hidden}
+.capacity-fill{height:100%;width:64.5%;background:linear-gradient(90deg,#22c55e,#16a34a)}
+.green{color:var(--green)} .red{color:var(--red)}
+.yellow{color:var(--yellow)} .blue{color:var(--blue)}
+.modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.7);
+  align-items:center;justify-content:center;z-index:999;
+}
+.modal-content{
+  background:#0b1224;border:1px solid #1e293b;
+  border-radius:12px;padding:20px;width:300px;
+}
+.modal h3{margin-top:0;color:#38bdf8}
+.modal button{
+  margin-top:12px;width:100%;
+  padding:6px;background:#38bdf8;
+  border:none;border-radius:6px;cursor:pointer;
+}
+@media(max-width:1200px){
+  .dashboard{grid-template-columns:repeat(2,320px)}
+}
+@media(max-width:800px){
+  .dashboard{grid-template-columns:1fr}
+}
+</style>
+
+<script>
+/* ===== CLOCK ===== */
+function startTime(){
+  const d=new Date();
+  document.getElementById("clk").innerHTML=d.toLocaleTimeString();
+  document.getElementById("dt").innerHTML=d.toLocaleDateString();
+  setTimeout(startTime,1000);
+}
+
+/* ===== VISITING CARD ===== */
+function openCard(){document.getElementById("card").style.display="flex";}
+function closeCard(){document.getElementById("card").style.display="none";}
+
+/* ===== LANGUAGE TOGGLE (NEW) ===== */
+const translations = {
+  hi:{
+    title:"फैक्ट्री डैशबोर्ड",
+    prodStatus:"उत्पादन स्थिति",
+    machineStatus:"मशीन स्थिति एवं बिजली खपत",
+    powerMTD:"कुल बिजली खपत (MTD)",
+    capacity:"क्षमता उपयोग",
+    prodAvg:"उत्पादन – आज एवं 7 दिन का औसत",
+    target:"लक्ष्य",
+    actual:"वास्तविक",
+    diff:"अंतर",
+    designCap:"डिज़ाइन क्षमता",
+    currentProd:"वर्तमान उत्पादन",
+    todayProd:"आज का उत्पादन",
+    avg7:"7 दिन का औसत"
+  },
+  en:{
+    title:"Factory Dashboard",
+    prodStatus:"Production Status",
+    machineStatus:"Machine Status & Power",
+    powerMTD:"Total Power Consumption (MTD)",
+    capacity:"Capacity Utilization",
+    prodAvg:"Production – Today & 7 Day Avg",
+    target:"Target",
+    actual:"Actual",
+    diff:"Difference",
+    designCap:"Design Capacity",
+    currentProd:"Current Production",
+    todayProd:"Today's Production",
+    avg7:"7 Day Average"
+  }
+};
+
+function setLang(lang){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    el.innerHTML = translations[lang][el.dataset.i18n];
+  });
+}
+</script>
+</head>
+
+<body onload="startTime();setLang('hi')">
+
+<table class="header-table" style="width:80%">
+<tr>
+<td style="width:90px">
+  <img src="HEXALogo_New.png" width="170" height="170">
+</td>
+<td>
+<header>
+<h1>
+  🏭 <span data-i18n="title">फैक्ट्री डैशबोर्ड</span>
+
+  <span class="header-actions">
+    <span class="info-icon" onclick="openCard()">ℹ️</span>
+    <select class="lang-select" onchange="setLang(this.value)">
+      <option value="hi">हिंदी</option>
+      <option value="en">English</option>
+    </select>
+  </span>
+</h1>
+<small>⏰ समय: <span id="clk"></span> | 📅 <span id="dt"></span></small>
+</header>
+</td>
+</tr>
+</table>
+
+<div class="page">
+<div class="dashboard">
+
+<div class="tile">
+  <div class="tile-header">
+    <div class="tile-title"><span class="tile-icon">📦</span><span data-i18n="prodStatus">उत्पादन स्थिति</span></div>
+  </div>
+  <div class="tile-body">
+    <div class="big green">6,450 KG</div>
+    <table>
+      <tr><td data-i18n="target">लक्ष्य</td><td>8,000</td></tr>
+      <tr><td data-i18n="actual">वास्तविक</td><td>6,450</td></tr>
+      <tr><td data-i18n="diff">अंतर</td><td class="red">-1,550</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="tile">
+  <div class="tile-header">
+    <div class="tile-title"><span class="tile-icon">⚡</span><span data-i18n="machineStatus">मशीन स्थिति एवं बिजली खपत</span></div>
+  </div>
+  <div class="tile-body">
+    <table>
+      <tr><td>Expeller-1</td><td class="green">ON</td><td class="blue">12.4 kW</td></tr>
+      <tr><td>Expeller-2</td><td class="red">OFF</td><td class="red">0.0 kW</td></tr>
+      <tr><td>Cooker</td><td class="green">ON</td><td class="blue">6.1 kW</td></tr>
+      <tr><td>Packing</td><td class="yellow">Idle</td><td class="yellow">3.8 kW</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="tile span-2">
+  <div class="tile-header">
+    <div class="tile-title"><span class="tile-icon">🔋</span><span data-i18n="powerMTD">कुल बिजली खपत (MTD)</span></div>
+  </div>
+  <div class="tile-body energy-body">
+    <div class="energy-main">
+      <div class="big blue">18,450 kWh</div>
+    </div>
+    <div class="energy-details">
+      <table>
+        <tr><td>Estimated Cost</td><td>₹1,47,600</td></tr>
+        <tr><td>Avg Daily</td><td>615 kWh</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tile">
+  <div class="tile-header">
+    <div class="tile-title"><span class="tile-icon">🏭</span><span data-i18n="capacity">क्षमता उपयोग</span></div>
+  </div>
+  <div class="tile-body">
+    <table>
+      <tr><td data-i18n="designCap">डिज़ाइन क्षमता</td><td>10,000</td></tr>
+      <tr><td data-i18n="currentProd">वर्तमान उत्पादन</td><td>6,450</td></tr>
+    </table>
+    <div class="capacity-box">
+      <div class="capacity-label">
+        <span>Capacity</span><span class="yellow">64.5%</span>
+      </div>
+      <div class="capacity-bar"><div class="capacity-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tile">
+  <div class="tile-header">
+    <div class="tile-title"><span class="tile-icon">📈</span><span data-i18n="prodAvg">उत्पादन – आज एवं 7 दिन का औसत</span></div>
+  </div>
+  <div class="tile-body">
+    <table>
+      <tr><td data-i18n="todayProd">आज का उत्पादन</td><td class="green">6,450 KG</td></tr>
+      <tr><td data-i18n="avg7">7 दिन का औसत</td><td>6,520 KG</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div>
+
+<div id="card" class="modal">
+<div class="modal-content">
+<h3>👤 Visiting Card</h3>
+<p><b>Name:</b> Ayush Goyal</p>
+<p><b>Role:</b> Industry 4.0 Consultant</p>
+<p><b>Email:</b> ayush@email.com</p>
+<p><b>Phone:</b> +49 XXXXXXXX</p>
+<button onclick="closeCard()">Close</button>
+</div>
+</div>
+
+</body>
+</html>
