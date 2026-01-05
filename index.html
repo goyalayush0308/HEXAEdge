@@ -116,6 +116,19 @@ td:last-child{text-align:right;font-weight:700}
 @media(max-width:800px){
   .dashboard{grid-template-columns:1fr}
 }
+/* ===== MOBILE SCROLL FIX (ONLY) ===== */
+@media (max-width: 768px){
+  html, body{
+    height:auto;
+    overflow-y:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page{
+    min-height:auto;
+  }
+}
+
 </style>
 
 <script>
@@ -292,5 +305,4 @@ function setLang(lang){
 </div>
 
 </body>
-
 </html>
